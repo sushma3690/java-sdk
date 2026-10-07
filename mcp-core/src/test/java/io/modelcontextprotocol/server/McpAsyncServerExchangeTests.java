@@ -208,6 +208,38 @@ class McpAsyncServerExchangeTests {
 	}
 
 	@Test
+	void testListRootsWithNullCapabilities() {
+
+		McpAsyncServerExchange exchangeWithNullCapabilities = new McpAsyncServerExchange("testSessionId", mockSession,
+				null, clientInfo, McpTransportContext.EMPTY);
+
+		StepVerifier.create(exchangeWithNullCapabilities.listRoots()).verifyErrorSatisfies(error -> {
+			assertThat(error).isInstanceOf(IllegalStateException.class)
+				.hasMessage("Client must be initialized. Call the initialize method first!");
+		});
+
+		verify(mockSession, never()).sendRequest(eq(McpSchema.METHOD_ROOTS_LIST), any(), any(TypeRef.class));
+	}
+
+	@Test
+	void testListRootsWithoutRootsCapabilities() {
+
+		McpSchema.ClientCapabilities capabilitiesWithoutRoots = McpSchema.ClientCapabilities.builder()
+			.sampling()
+			.build();
+
+		McpAsyncServerExchange exchangeWithoutRoots = new McpAsyncServerExchange("testSessionId", mockSession,
+				capabilitiesWithoutRoots, clientInfo, McpTransportContext.EMPTY);
+
+		StepVerifier.create(exchangeWithoutRoots.listRoots()).verifyErrorSatisfies(error -> {
+			assertThat(error).isInstanceOf(IllegalStateException.class)
+				.hasMessage("Client must be configured with roots capabilities");
+		});
+
+		verify(mockSession, never()).sendRequest(eq(McpSchema.METHOD_ROOTS_LIST), any(), any(TypeRef.class));
+	}
+
+	@Test
 	void testGetClientCapabilities() {
 		assertThat(exchange.getClientCapabilities()).isEqualTo(clientCapabilities);
 	}
